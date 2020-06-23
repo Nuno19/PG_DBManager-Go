@@ -12,21 +12,25 @@ import (
 
 var SCHEMA_MANAGER = "schema_manager_db"
 
+//Field - Struct of a database field, defines name and type of column
 type Field struct {
 	Name string
 	Type string
 }
+
+//Value - Value extracted from database, map with colum as keys
 type Value map[string]string
 
+//DBManager - Struct containig DB information
 type DBManager struct {
 	db           *sqlx.DB
-	errManager   error
 	tableNames   []string
 	tableSchemas map[string][]Field
 	connected    bool
 }
 
-func (database *DBManager) tableExists(tableName string) bool {
+//TableExists - Check if table exists
+func (database *DBManager) TableExists(tableName string) bool {
 	rows, _ := database.db.Queryx(fmt.Sprintf("SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '%s'", tableName))
 
 	for rows.Next() {
@@ -50,6 +54,7 @@ func (database *DBManager) columnFromTableExists(tableName string, columnName st
 	return false
 }
 
+//GetAllTableNames - Returns the name of all the tables managed
 func (database *DBManager) GetAllTableNames() []string {
 	elem, _ := database.GetAllTableElements(SCHEMA_MANAGER)
 
@@ -60,6 +65,7 @@ func (database *DBManager) GetAllTableNames() []string {
 	return names
 }
 
+//Connect - connect to the database specified
 func (database *DBManager) Connect(dbType string, dbName string, dbUser string, dbPassword string) error {
 
 	connString := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", dbUser, dbPassword, dbName)
@@ -79,7 +85,7 @@ func (database *DBManager) Connect(dbType string, dbName string, dbUser string, 
 
 func (database *DBManager) addToSchemaManager(tableName string, fields Value) {
 	tableName = strings.ToLower(tableName)
-	if !database.tableExists(SCHEMA_MANAGER) {
+	if !database.TableExists(SCHEMA_MANAGER) {
 		tableSchema := fmt.Sprintf("CREATE TABLE %s (table_name text, table_schema text)", SCHEMA_MANAGER)
 		log.Println(tableSchema)
 		database.db.MustExec(tableSchema)
@@ -87,6 +93,7 @@ func (database *DBManager) addToSchemaManager(tableName string, fields Value) {
 	database.InsertElement(SCHEMA_MANAGER, fields)
 }
 
+//CreateTable - creates a table with provided name and fields, returns error if any
 func (database *DBManager) CreateTable(tableName string, fields []Field) error {
 	tableName = strings.ToLower(tableName)
 	if !database.connected {
@@ -94,7 +101,7 @@ func (database *DBManager) CreateTable(tableName string, fields []Field) error {
 		return errors.New("DBManager - Database Not Connected!")
 	}
 
-	if database.tableExists(tableName) {
+	if database.TableExists(tableName) {
 		log.Println("Table already exists!!!")
 		return errors.New("DBManager - Table already exists!")
 	}
@@ -122,6 +129,7 @@ func (database *DBManager) CreateTable(tableName string, fields []Field) error {
 	return nil
 }
 
+//GetAllTableElements - Returns all the elements in a table
 func (database *DBManager) GetAllTableElements(tableName string) ([]Value, error) {
 	tableName = strings.ToLower(tableName)
 	if !database.connected {
@@ -129,7 +137,7 @@ func (database *DBManager) GetAllTableElements(tableName string) ([]Value, error
 		return nil, errors.New("DBManager - Database Not Connected!")
 	}
 
-	if !database.tableExists(tableName) {
+	if !database.TableExists(tableName) {
 		log.Println("Table doesn't exist!!!")
 		return nil, errors.New("DBManager - Table doesn't exist!")
 	}
@@ -162,6 +170,7 @@ func (database *DBManager) GetAllTableElements(tableName string) ([]Value, error
 	return finalMap, nil
 }
 
+//FilerTableElementsBy - Filter elements of a table, by provided Value(key-value) maps and optional column to order by, reutns array of maps
 func (database *DBManager) FilerTableElementsBy(tableName string, filterBy Value, orderBy ...string) ([]Value, error) {
 	tableName = strings.ToLower(tableName)
 	if !database.connected {
@@ -169,7 +178,7 @@ func (database *DBManager) FilerTableElementsBy(tableName string, filterBy Value
 		return nil, errors.New("DBManager - Database Not Connected!")
 	}
 
-	if !database.tableExists(tableName) {
+	if !database.TableExists(tableName) {
 		log.Println("Table doesn't exist!!!")
 		return nil, errors.New("DBManager - Table doesn't exist!")
 	}
@@ -222,6 +231,7 @@ func (database *DBManager) FilerTableElementsBy(tableName string, filterBy Value
 	return finalMap, nil
 }
 
+//DeleteElementFromTable - Delete element from table with specified Value(Key-value) map
 func (database *DBManager) DeleteElementFromTable(tableName string, element Value) error {
 	tableName = strings.ToLower(tableName)
 	if !database.connected {
@@ -229,7 +239,7 @@ func (database *DBManager) DeleteElementFromTable(tableName string, element Valu
 		return errors.New("DBManager - Database Not Connected!")
 	}
 
-	if !database.tableExists(tableName) {
+	if !database.TableExists(tableName) {
 		log.Println("Table doesn't exist!!!")
 		return errors.New("DBManager - Table doesn't exist!")
 	}
@@ -255,6 +265,7 @@ func (database *DBManager) DeleteElementFromTable(tableName string, element Valu
 	return nil
 }
 
+//DeleteAllElementsFromTable - deletes all the elements from a table
 func (database *DBManager) DeleteAllElementsFromTable(tableName string) error {
 	tableName = strings.ToLower(tableName)
 	if !database.connected {
@@ -262,7 +273,7 @@ func (database *DBManager) DeleteAllElementsFromTable(tableName string) error {
 		return errors.New("DBManager - Database Not Connected!")
 	}
 
-	if !database.tableExists(tableName) {
+	if !database.TableExists(tableName) {
 		log.Println("Table doesn't exist!!!")
 		return errors.New("DBManager - Table doesn't exist!")
 	}
@@ -273,6 +284,7 @@ func (database *DBManager) DeleteAllElementsFromTable(tableName string) error {
 	return nil
 }
 
+//InsertElement - inserts element in Value map to a certain table
 func (database *DBManager) InsertElement(tableName string, element Value) error {
 	tableName = strings.ToLower(tableName)
 
@@ -281,7 +293,7 @@ func (database *DBManager) InsertElement(tableName string, element Value) error 
 		return errors.New("DBManager - Database Not Connected!")
 	}
 
-	if !database.tableExists(tableName) {
+	if !database.TableExists(tableName) {
 		log.Println("Table doesn't exist!!!")
 		return errors.New("DBManager - Table doesn't exist!")
 	}
@@ -310,6 +322,7 @@ func (database *DBManager) InsertElement(tableName string, element Value) error 
 	return nil
 }
 
+//DropTable - Deletes table from system
 func (database *DBManager) DropTable(tableName string) error {
 	tableName = strings.ToLower(tableName)
 	if !database.connected {
@@ -317,7 +330,7 @@ func (database *DBManager) DropTable(tableName string) error {
 		return errors.New("DBManager - Database Not Connected!")
 	}
 
-	if !database.tableExists(tableName) {
+	if !database.TableExists(tableName) {
 		log.Println("Table doesn't exist!!!")
 		return errors.New("DBManager - Table doesn't exist!")
 	}
@@ -330,14 +343,15 @@ func (database *DBManager) DropTable(tableName string) error {
 	return nil
 }
 
-func (database *DBManager) updateElementFromTable(tableName string, filter Value, elem Value) error {
+//UpdateElementFromTable - update elements from a certain table providing map of elements to change and map of filter - chnges every matching row
+func (database *DBManager) UpdateElementFromTable(tableName string, filter Value, elem Value) error {
 	tableName = strings.ToLower(tableName)
 	if !database.connected {
 		log.Println("Database Not Connected!!!")
 		return errors.New("DBManager - Database Not Connected!")
 	}
 
-	if !database.tableExists(tableName) {
+	if !database.TableExists(tableName) {
 		log.Println("Table doesn't exist!!!")
 		return errors.New("DBManager - Table doesn't exist!")
 	}
