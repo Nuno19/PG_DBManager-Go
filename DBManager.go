@@ -1,3 +1,5 @@
+//Package dbmanager Provides a postgres database manager using sqlx.
+//It uses maps to create manage an save data in postgres database
 package dbmanager
 
 import (
@@ -66,7 +68,7 @@ func (database *DBManager) GetAllTableNames() []string {
 }
 
 //Connect - connect to the database specified
-func (database *DBManager) Connect(dbType string, dbName string, dbUser string, dbPassword string) error {
+func (database *DBManager) Connect(dbName string, dbUser string, dbPassword string) error {
 
 	connString := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", dbUser, dbPassword, dbName)
 	var err error
