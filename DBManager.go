@@ -34,7 +34,7 @@ type DBManager struct {
 //TableExists - Check if table exists
 //PARAMS:
 //	tableName: name of the table to search for
-//		returns: true if the table exists, false if not
+//		returns: True if the table exists, False if not
 func (database *DBManager) TableExists(tableName string) bool {
 	rows, _ := database.db.Queryx(fmt.Sprintf("SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '%s'", tableName))
 
