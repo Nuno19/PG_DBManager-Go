@@ -21,7 +21,7 @@ type Field struct {
 }
 
 //Value - Value extracted from database, map with colum as keys
-type Value map[string]string
+type Value map[string]interface{}
 
 //DBManager - Struct containig DB information
 type DBManager struct {
@@ -65,7 +65,7 @@ func (database *DBManager) getAllTableNames() []string {
 
 	names := make([]string, len(elem))
 	for i, el := range elem {
-		names[i] = el["tablename"]
+		names[i] = fmt.Sprint(el["tablename"])
 	}
 	return names
 }
@@ -208,7 +208,7 @@ func (database *DBManager) FilerRowsBy(tableName string, filterBy Value, orderBy
 	filters := ""
 	i := 0
 	for k, v := range filterBy {
-		filters += k + "='" + v + "'"
+		filters += k + "='" + fmt.Sprint(v) + "'"
 		if i < len(filterBy)-1 {
 			filters += " AND "
 		}
@@ -271,7 +271,7 @@ func (database *DBManager) SearchRowsBy(tableName string, filterBy Value, orderB
 	filters := ""
 	i := 0
 	for k, v := range filterBy {
-		filters += k + "::text LIKE '%" + v + "%'"
+		filters += k + "::text LIKE '%" + fmt.Sprint(v) + "%'"
 		if i < len(filterBy)-1 {
 			filters += " AND "
 		}
@@ -335,7 +335,7 @@ func (database *DBManager) DeleteRowBy(tableName string, element Value) error {
 	i := 0
 	for name, value := range element {
 
-		filters += name + "='" + value + "'"
+		filters += name + "='" + fmt.Sprint(value) + "'"
 
 		if i < len(element)-1 {
 			filters += " AND "
@@ -459,9 +459,9 @@ func (database *DBManager) UpdateRowBy(tableName string, filter Value, elem Valu
 			return errors.New("DBManager - Column doesn't exist!")
 		}
 		if j < len(filter)-1 {
-			filterFields += colName + "='" + colValue + "' AND "
+			filterFields += colName + "='" + fmt.Sprint(colValue) + "' AND "
 		} else {
-			filterFields += colName + "='" + colValue + "'"
+			filterFields += colName + "='" + fmt.Sprint(colValue) + "'"
 		}
 		j++
 	}
@@ -474,9 +474,9 @@ func (database *DBManager) UpdateRowBy(tableName string, filter Value, elem Valu
 		}
 		fmt.Println(colValue)
 		if i < len(elem)-1 {
-			updateFields += colName + "='" + colValue + "', "
+			updateFields += colName + "='" + fmt.Sprint(colValue) + "', "
 		} else {
-			updateFields += colName + "='" + colValue + "'"
+			updateFields += colName + "='" + fmt.Sprint(colValue) + "'"
 		}
 		i++
 	}
