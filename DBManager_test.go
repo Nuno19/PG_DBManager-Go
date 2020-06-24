@@ -1,3 +1,7 @@
+//Package dbmanager Provides a postgres database manager using sqlx.
+
+//It uses maps to create manage an save data in postgres database
+
 package dbmanager
 
 import (
@@ -5,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestDBManager_tableExists(t *testing.T) {
+func TestDBManager_TableExists(t *testing.T) {
 	type args struct {
 		tableName string
 	}
@@ -19,8 +23,8 @@ func TestDBManager_tableExists(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.database.tableExists(tt.args.tableName); got != tt.want {
-				t.Errorf("DBManager.tableExists() = %v, want %v", got, tt.want)
+			if got := tt.database.TableExists(tt.args.tableName); got != tt.want {
+				t.Errorf("DBManager.TableExists() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -48,7 +52,7 @@ func TestDBManager_columnFromTableExists(t *testing.T) {
 	}
 }
 
-func TestDBManager_GetAllTableNames(t *testing.T) {
+func TestDBManager_getAllTableNames(t *testing.T) {
 	tests := []struct {
 		name     string
 		database *DBManager
@@ -58,8 +62,8 @@ func TestDBManager_GetAllTableNames(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.database.GetAllTableNames(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("DBManager.GetAllTableNames() = %v, want %v", got, tt.want)
+			if got := tt.database.getAllTableNames(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("DBManager.getAllTableNames() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -67,7 +71,6 @@ func TestDBManager_GetAllTableNames(t *testing.T) {
 
 func TestDBManager_Connect(t *testing.T) {
 	type args struct {
-		dbType     string
 		dbName     string
 		dbUser     string
 		dbPassword string
@@ -82,7 +85,7 @@ func TestDBManager_Connect(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.database.Connect(tt.args.dbType, tt.args.dbName, tt.args.dbUser, tt.args.dbPassword); (err != nil) != tt.wantErr {
+			if err := tt.database.Connect(tt.args.dbName, tt.args.dbUser, tt.args.dbPassword); (err != nil) != tt.wantErr {
 				t.Errorf("DBManager.Connect() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -130,7 +133,7 @@ func TestDBManager_CreateTable(t *testing.T) {
 	}
 }
 
-func TestDBManager_GetAllTableElements(t *testing.T) {
+func TestDBManager_GetAllRows(t *testing.T) {
 	type args struct {
 		tableName string
 	}
@@ -145,19 +148,19 @@ func TestDBManager_GetAllTableElements(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.database.GetAllTableElements(tt.args.tableName)
+			got, err := tt.database.GetAllRows(tt.args.tableName)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("DBManager.GetAllTableElements() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("DBManager.GetAllRows() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("DBManager.GetAllTableElements() = %v, want %v", got, tt.want)
+				t.Errorf("DBManager.GetAllRows() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestDBManager_FilerTableElementsBy(t *testing.T) {
+func TestDBManager_FilerRowsBy(t *testing.T) {
 	type args struct {
 		tableName string
 		filterBy  Value
@@ -174,19 +177,48 @@ func TestDBManager_FilerTableElementsBy(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.database.FilerTableElementsBy(tt.args.tableName, tt.args.filterBy, tt.args.orderBy...)
+			got, err := tt.database.FilerRowsBy(tt.args.tableName, tt.args.filterBy, tt.args.orderBy...)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("DBManager.FilerTableElementsBy() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("DBManager.FilerRowsBy() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("DBManager.FilerTableElementsBy() = %v, want %v", got, tt.want)
+				t.Errorf("DBManager.FilerRowsBy() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestDBManager_DeleteElementFromTable(t *testing.T) {
+func TestDBManager_SearchRowsBy(t *testing.T) {
+	type args struct {
+		tableName string
+		filterBy  Value
+		orderBy   []string
+	}
+	tests := []struct {
+		name     string
+		database *DBManager
+		args     args
+		want     []Value
+		wantErr  bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.database.SearchRowsBy(tt.args.tableName, tt.args.filterBy, tt.args.orderBy...)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DBManager.SearchRowsBy() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("DBManager.SearchRowsBy() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDBManager_DeleteRowBy(t *testing.T) {
 	type args struct {
 		tableName string
 		element   Value
@@ -201,14 +233,14 @@ func TestDBManager_DeleteElementFromTable(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.database.DeleteElementFromTable(tt.args.tableName, tt.args.element); (err != nil) != tt.wantErr {
-				t.Errorf("DBManager.DeleteElementFromTable() error = %v, wantErr %v", err, tt.wantErr)
+			if err := tt.database.DeleteRowBy(tt.args.tableName, tt.args.element); (err != nil) != tt.wantErr {
+				t.Errorf("DBManager.DeleteRowBy() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
 }
 
-func TestDBManager_DeleteAllElementsFromTable(t *testing.T) {
+func TestDBManager_DeleteAllRows(t *testing.T) {
 	type args struct {
 		tableName string
 	}
@@ -222,8 +254,8 @@ func TestDBManager_DeleteAllElementsFromTable(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.database.DeleteAllElementsFromTable(tt.args.tableName); (err != nil) != tt.wantErr {
-				t.Errorf("DBManager.DeleteAllElementsFromTable() error = %v, wantErr %v", err, tt.wantErr)
+			if err := tt.database.DeleteAllRows(tt.args.tableName); (err != nil) != tt.wantErr {
+				t.Errorf("DBManager.DeleteAllRows() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -272,7 +304,7 @@ func TestDBManager_DropTable(t *testing.T) {
 	}
 }
 
-func TestDBManager_updateElementFromTable(t *testing.T) {
+func TestDBManager_UpdateRowBy(t *testing.T) {
 	type args struct {
 		tableName string
 		filter    Value
@@ -288,8 +320,8 @@ func TestDBManager_updateElementFromTable(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.database.updateElementFromTable(tt.args.tableName, tt.args.filter, tt.args.elem); (err != nil) != tt.wantErr {
-				t.Errorf("DBManager.updateElementFromTable() error = %v, wantErr %v", err, tt.wantErr)
+			if err := tt.database.UpdateRowBy(tt.args.tableName, tt.args.filter, tt.args.elem); (err != nil) != tt.wantErr {
+				t.Errorf("DBManager.UpdateRowBy() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

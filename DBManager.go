@@ -32,6 +32,9 @@ type DBManager struct {
 }
 
 //TableExists - Check if table exists
+//PARAMS:
+//	tableName: name of the table to search for
+//		returns: true if the table exists, false if not
 func (database *DBManager) TableExists(tableName string) bool {
 	rows, _ := database.db.Queryx(fmt.Sprintf("SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '%s'", tableName))
 
@@ -56,9 +59,9 @@ func (database *DBManager) columnFromTableExists(tableName string, columnName st
 	return false
 }
 
-//GetAllTableNames - Returns the name of all the tables managed
-func (database *DBManager) GetAllTableNames() []string {
-	elem, _ := database.GetAllTableElements(SCHEMA_MANAGER)
+//getAllTableNames - Returns the name of all the tables managed
+func (database *DBManager) getAllTableNames() []string {
+	elem, _ := database.GetAllRows(SCHEMA_MANAGER)
 
 	names := make([]string, len(elem))
 	for i, el := range elem {
@@ -68,6 +71,11 @@ func (database *DBManager) GetAllTableNames() []string {
 }
 
 //Connect - connect to the database specified
+//PARAMS:
+//	dbName: name of the database to connect to
+//	dbUser: username of the postgres user
+//	dbPassword: password of the postgres user
+//		returns: error if any
 func (database *DBManager) Connect(dbName string, dbUser string, dbPassword string) error {
 
 	connString := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", dbUser, dbPassword, dbName)
@@ -95,7 +103,11 @@ func (database *DBManager) addToSchemaManager(tableName string, fields Value) {
 	database.InsertElement(SCHEMA_MANAGER, fields)
 }
 
-//CreateTable - creates a table with provided name and fields, returns error if any
+//CreateTable - creates a table with provided name and fields
+//PARAMS:
+//	tableName: name of the table to be created
+//	fields: slice of fields with field name and type
+//		returns: error if any
 func (database *DBManager) CreateTable(tableName string, fields []Field) error {
 	tableName = strings.ToLower(tableName)
 	if !database.connected {
@@ -131,8 +143,11 @@ func (database *DBManager) CreateTable(tableName string, fields []Field) error {
 	return nil
 }
 
-//GetAllTableElements - Returns all the elements in a table
-func (database *DBManager) GetAllTableElements(tableName string) ([]Value, error) {
+//GetAllRows - returns all the rows of the table
+//PARAMS:
+//	tableName: name of the table to be returned
+//		returns: slice of Value, error if any
+func (database *DBManager) GetAllRows(tableName string) ([]Value, error) {
 	tableName = strings.ToLower(tableName)
 	if !database.connected {
 		log.Println("Database Not Connected!!!")
@@ -145,9 +160,10 @@ func (database *DBManager) GetAllTableElements(tableName string) ([]Value, error
 	}
 
 	finalMap := []Value{}
-
+	query := "SELECT * FROM " + tableName
+	log.Println(query)
 	result := make(map[string]interface{})
-	rows, err := database.db.Queryx("SELECT * FROM " + tableName)
+	rows, err := database.db.Queryx(query)
 
 	if err != nil {
 		return nil, errors.New("DBManager - Couldn't execute query")
@@ -162,18 +178,20 @@ func (database *DBManager) GetAllTableElements(tableName string) ([]Value, error
 		temp := make(Value)
 		for k, v := range result {
 			temp[k] = fmt.Sprint(v)
-			//fmt.Printf("%s: %s |", k, v)
 		}
-		//fmt.Printf("%#v\n", result)
 		finalMap = append(finalMap, temp)
-		rows.Close()
 	}
 
 	return finalMap, nil
 }
 
-//FilerTableElementsBy - Filter elements of a table, by provided Value(key-value) maps and optional column to order by, reutns array of maps
-func (database *DBManager) FilerTableElementsBy(tableName string, filterBy Value, orderBy ...string) ([]Value, error) {
+//FilerRowsBy - Search by column containing exactly each column value
+//PARAMS:
+//	tableName: name of the table where to search
+//	filterBy:  a Value(key-value) map of the column to search by
+//	orderBy: optional string of column name to sort by
+// 		returns: Value slice of each row, error if any
+func (database *DBManager) FilerRowsBy(tableName string, filterBy Value, orderBy ...string) ([]Value, error) {
 	tableName = strings.ToLower(tableName)
 	if !database.connected {
 		log.Println("Database Not Connected!!!")
@@ -223,18 +241,82 @@ func (database *DBManager) FilerTableElementsBy(tableName string, filterBy Value
 		temp := make(Value)
 		for k, v := range result {
 			temp[k] = fmt.Sprint(v)
-			//fmt.Printf("%s: %s |", k, v)
 		}
-		//fmt.Printf("%#v\n", result)
 		finalMap = append(finalMap, temp)
-		rows.Close()
 	}
 
 	return finalMap, nil
 }
 
-//DeleteElementFromTable - Delete element from table with specified Value(Key-value) map
-func (database *DBManager) DeleteElementFromTable(tableName string, element Value) error {
+//SearchRowsBy - Search by column containing part of the string
+//PARAMS:
+//	tableName: name of the table where to search
+//	filterBy:  a Value(key-value) map of the column to search by
+//	orderBy: optional string of column name to sort by
+// 		returns: Value slice of each row, error if any
+func (database *DBManager) SearchRowsBy(tableName string, filterBy Value, orderBy ...string) ([]Value, error) {
+	tableName = strings.ToLower(tableName)
+	if !database.connected {
+		log.Println("Database Not Connected!!!")
+		return nil, errors.New("DBManager - Database Not Connected!")
+	}
+
+	if !database.TableExists(tableName) {
+		log.Println("Table doesn't exist!!!")
+		return nil, errors.New("DBManager - Table doesn't exist!")
+	}
+
+	finalMap := []Value{}
+
+	filters := ""
+	i := 0
+	for k, v := range filterBy {
+		filters += k + "::text LIKE '%" + v + "%'"
+		if i < len(filterBy)-1 {
+			filters += " AND "
+		}
+		i++
+	}
+
+	query := "SELECT * FROM " + tableName
+
+	if len(filterBy) > 0 {
+		query += " WHERE " + filters
+	}
+
+	if len(orderBy) > 0 {
+		query += " ORDER BY " + orderBy[0] + " ASC"
+	}
+
+	log.Println(query)
+
+	result := make(map[string]interface{})
+	rows, err := database.db.Queryx(query)
+	if err != nil {
+		return nil, errors.New("DBManager - Couldn't execute query")
+	}
+	for rows.Next() {
+		err := rows.MapScan(result)
+		if err != nil {
+			return nil, errors.New("DBManager - Couldn't execute query")
+		}
+
+		temp := make(Value)
+		for k, v := range result {
+			temp[k] = fmt.Sprint(v)
+		}
+		finalMap = append(finalMap, temp)
+	}
+
+	return finalMap, nil
+}
+
+//DeleteRowBy - Delete element from table
+//PARAMS:
+//	tableName: name of the table where to delete
+//	element:  a Value(key-value) map of the column(s) to search by
+// 		returns: error if any
+func (database *DBManager) DeleteRowBy(tableName string, element Value) error {
 	tableName = strings.ToLower(tableName)
 	if !database.connected {
 		log.Println("Database Not Connected!!!")
@@ -267,8 +349,11 @@ func (database *DBManager) DeleteElementFromTable(tableName string, element Valu
 	return nil
 }
 
-//DeleteAllElementsFromTable - deletes all the elements from a table
-func (database *DBManager) DeleteAllElementsFromTable(tableName string) error {
+//DeleteAllRows - deletes all the elements from a table
+//PARAMS:
+//	tableName: name of the table where to delete
+// 		returns: error if any
+func (database *DBManager) DeleteAllRows(tableName string) error {
 	tableName = strings.ToLower(tableName)
 	if !database.connected {
 		log.Println("Database Not Connected!!!")
@@ -286,7 +371,11 @@ func (database *DBManager) DeleteAllElementsFromTable(tableName string) error {
 	return nil
 }
 
-//InsertElement - inserts element in Value map to a certain table
+//InsertElement - inserts element in a table
+//PARAMS:
+//	tablename: name of the table where to instert
+//	element: Value(Key-Value map) of the element to insert
+//		returns: error if any
 func (database *DBManager) InsertElement(tableName string, element Value) error {
 	tableName = strings.ToLower(tableName)
 
@@ -318,13 +407,13 @@ func (database *DBManager) InsertElement(tableName string, element Value) error 
 
 	database.db.MustExec(insertString, variableValue...)
 
-	v := Value{}
-	v["hello"] = "ala"
-
 	return nil
 }
 
 //DropTable - Deletes table from system
+//PARAMS:
+//	tableName: name of the table to search for
+//		returns: error if any
 func (database *DBManager) DropTable(tableName string) error {
 	tableName = strings.ToLower(tableName)
 	if !database.connected {
@@ -337,7 +426,7 @@ func (database *DBManager) DropTable(tableName string) error {
 		return errors.New("DBManager - Table doesn't exist!")
 	}
 
-	database.DeleteElementFromTable(SCHEMA_MANAGER, Value{"table_name": tableName})
+	database.DeleteRowBy(SCHEMA_MANAGER, Value{"table_name": tableName})
 	deleteString := fmt.Sprintf("DROP TABLE %s ", tableName)
 
 	log.Println(deleteString)
@@ -345,8 +434,13 @@ func (database *DBManager) DropTable(tableName string) error {
 	return nil
 }
 
-//UpdateElementFromTable - update elements from a certain table providing map of elements to change and map of filter - chnges every matching row
-func (database *DBManager) UpdateElementFromTable(tableName string, filter Value, elem Value) error {
+//UpdateRowBy - update all matching rows from a certain table
+//PARAMS:
+//	tablename: name of the table to update
+//	filter: filter to search row to change
+//	elem: map of the column(s) to update
+//		returns: error if any
+func (database *DBManager) UpdateRowBy(tableName string, filter Value, elem Value) error {
 	tableName = strings.ToLower(tableName)
 	if !database.connected {
 		log.Println("Database Not Connected!!!")
