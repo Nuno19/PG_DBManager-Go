@@ -71,7 +71,7 @@ func (database *DBManager) getAllTableNames() []string {
 }
 
 //Connect - connect to the database specified
-//PARAMS:
+//	PARAMS:
 //	dbName: name of the database to connect to
 //	dbUser: username of the postgres user
 //	dbPassword: password of the postgres user
@@ -79,6 +79,29 @@ func (database *DBManager) getAllTableNames() []string {
 func (database *DBManager) Connect(dbName string, dbUser string, dbPassword string) error {
 
 	connString := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", dbUser, dbPassword, dbName)
+	var err error
+	database.db, err = sqlx.Connect("postgres", connString)
+
+	if err != nil {
+		return err
+	}
+
+	database.connected = true
+	database.tableNames = []string{}
+	database.tableSchemas = map[string][]Field{}
+
+	return nil
+}
+
+//ConnectURL - connect to the database specified
+//	PARAMS:
+//	dbName: name of the database to connect to
+//	dbUser: username of the postgres user
+//	dbPassword: password of the postgres user
+//		returns: error if any
+func (database *DBManager) ConnectURL(dbURL string, dbName string, dbUser string, dbPassword string) error {
+
+	connString := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=verify-full", dbUser, dbPassword, dbURL, dbName)
 	var err error
 	database.db, err = sqlx.Connect("postgres", connString)
 
@@ -104,7 +127,7 @@ func (database *DBManager) addToSchemaManager(tableName string, fields Value) {
 }
 
 //CreateTable - creates a table with provided name and fields
-//PARAMS:
+//	PARAMS:
 //	tableName: name of the table to be created
 //	fields: slice of fields with field name and type
 //		returns: error if any
@@ -144,7 +167,7 @@ func (database *DBManager) CreateTable(tableName string, fields []Field) error {
 }
 
 //GetAllRows - returns all the rows of the table
-//PARAMS:
+//	PARAMS:
 //	tableName: name of the table to be returned
 //		returns: slice of Value, error if any
 func (database *DBManager) GetAllRows(tableName string) ([]Value, error) {
@@ -186,7 +209,7 @@ func (database *DBManager) GetAllRows(tableName string) ([]Value, error) {
 }
 
 //FilerRowsBy - Search by column containing exactly each column value
-//PARAMS:
+//	PARAMS:
 //	tableName: name of the table where to search
 //	filterBy:  a Value(key-value) map of the column to search by
 //	orderBy: optional string of column name to sort by
@@ -249,7 +272,7 @@ func (database *DBManager) FilerRowsBy(tableName string, filterBy Value, orderBy
 }
 
 //SearchRowsBy - Search by column containing part of the string
-//PARAMS:
+//	PARAMS:
 //	tableName: name of the table where to search
 //	filterBy:  a Value(key-value) map of the column to search by
 //	orderBy: optional string of column name to sort by
@@ -312,7 +335,7 @@ func (database *DBManager) SearchRowsBy(tableName string, filterBy Value, orderB
 }
 
 //DeleteRowBy - Delete element from table
-//PARAMS:
+//	PARAMS:
 //	tableName: name of the table where to delete
 //	element:  a Value(key-value) map of the column(s) to search by
 // 		returns: error if any
@@ -350,7 +373,7 @@ func (database *DBManager) DeleteRowBy(tableName string, element Value) error {
 }
 
 //DeleteAllRows - deletes all the elements from a table
-//PARAMS:
+//	PARAMS:
 //	tableName: name of the table where to delete
 // 		returns: error if any
 func (database *DBManager) DeleteAllRows(tableName string) error {
@@ -372,7 +395,7 @@ func (database *DBManager) DeleteAllRows(tableName string) error {
 }
 
 //InsertElement - inserts element in a table
-//PARAMS:
+//	PARAMS:
 //	tablename: name of the table where to instert
 //	element: Value(Key-Value map) of the element to insert
 //		returns: error if any
@@ -411,7 +434,7 @@ func (database *DBManager) InsertElement(tableName string, element Value) error 
 }
 
 //DropTable - Deletes table from system
-//PARAMS:
+//	PARAMS:
 //	tableName: name of the table to search for
 //		returns: error if any
 func (database *DBManager) DropTable(tableName string) error {
@@ -435,7 +458,7 @@ func (database *DBManager) DropTable(tableName string) error {
 }
 
 //UpdateRowBy - update all matching rows from a certain table
-//PARAMS:
+//	PARAMS:
 //	tablename: name of the table to update
 //	filter: filter to search row to change
 //	elem: map of the column(s) to update
