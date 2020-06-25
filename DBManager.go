@@ -109,7 +109,6 @@ func (database *DBManager) ConnectURL(url string) error {
 	database.connected = true
 	database.tableNames = []string{}
 	database.tableSchemas = map[string][]Field{}
-	defer database.db.Close()
 
 	err = database.db.Ping()
 	if err != nil {
