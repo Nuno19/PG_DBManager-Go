@@ -99,11 +99,10 @@ func (database *DBManager) Connect(dbName string, dbUser string, dbPassword stri
 //	dbUser: username of the postgres user
 //	dbPassword: password of the postgres user
 //		returns: error if any
-func (database *DBManager) ConnectURL(dbURL string, dbName string, dbUser string, dbPassword string) error {
-
-	connString := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=verify-full", dbUser, dbPassword, dbURL, dbName)
+func (database *DBManager) ConnectURL(url string) error {
 	var err error
-	database.db, err = sqlx.Connect("postgres", connString)
+
+	database.db, err = sqlx.Open("postgres", url)
 
 	if err != nil {
 		return err
@@ -112,7 +111,12 @@ func (database *DBManager) ConnectURL(dbURL string, dbName string, dbUser string
 	database.connected = true
 	database.tableNames = []string{}
 	database.tableSchemas = map[string][]Field{}
+	defer database.db.Close()
 
+	err = database.db.Ping()
+	if err != nil {
+		panic(err)
+	}
 	return nil
 }
 
@@ -458,7 +462,7 @@ func (database *DBManager) DropTable(tableName string) error {
 }
 
 //UpdateRowBy - update all matching rows from a certain table
-//	PARAMS:
+//PARAMS:
 //	tablename: name of the table to update
 //	filter: filter to search row to change
 //	elem: map of the column(s) to update
