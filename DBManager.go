@@ -95,9 +95,7 @@ func (database *DBManager) Connect(dbName string, dbUser string, dbPassword stri
 
 //ConnectURL - connect to the database specified
 //	PARAMS:
-//	dbName: name of the database to connect to
-//	dbUser: username of the postgres user
-//	dbPassword: password of the postgres user
+//	url: name of the database to connect to
 //		returns: error if any
 func (database *DBManager) ConnectURL(url string) error {
 	var err error
