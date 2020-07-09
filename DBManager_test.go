@@ -2,7 +2,7 @@
 
 //It uses maps to create manage an save data in postgres database
 
-package main
+package dbmanage
 
 import (
 	"reflect"
