@@ -1,6 +1,6 @@
 //Package dbmanager Provides a postgres database manager using sqlx.
 //It uses maps to create manage an save data in postgres database
-package dbmanager
+package main
 
 import (
 	"errors"
@@ -144,7 +144,7 @@ func (database *DBManager) CreateTable(tableName string, fields []Field) error {
 		return errors.New("DBManager - Table already exists!")
 	}
 
-	fieldString := ""
+	fieldString := " internal_page_id serial, "
 
 	for idx, field := range fields {
 		if idx < len(fields)-1 {
@@ -201,6 +201,9 @@ func (database *DBManager) GetAllRows(tableName string) ([]Value, error) {
 
 		temp := make(Value)
 		for k, v := range result {
+			if k == "internal_page_id" {
+				continue
+			}
 			temp[k] = fmt.Sprint(v)
 		}
 		finalMap = append(finalMap, temp)
@@ -264,6 +267,9 @@ func (database *DBManager) FilerRowsBy(tableName string, filterBy Value, orderBy
 
 		temp := make(Value)
 		for k, v := range result {
+			if k == "internal_page_id" {
+				continue
+			}
 			temp[k] = fmt.Sprint(v)
 		}
 		finalMap = append(finalMap, temp)
@@ -327,6 +333,65 @@ func (database *DBManager) SearchRowsBy(tableName string, filterBy Value, orderB
 
 		temp := make(Value)
 		for k, v := range result {
+			if k == "internal_page_id" {
+				continue
+			}
+			temp[k] = fmt.Sprint(v)
+		}
+		finalMap = append(finalMap, temp)
+	}
+
+	return finalMap, nil
+}
+
+//PagedQuery - Search by column containing part of the string
+//	PARAMS:
+//	tableName: name of the table where to search
+//	pageInfo:  a map of pageNumber, pageSize
+// 		returns: Value slice of each row, error if any
+func (database *DBManager) PagedQuery(tableName string, pageInfo Value) ([]Value, error) {
+	tableName = strings.ToLower(tableName)
+	if !database.connected {
+		log.Println("Database Not Connected!!!")
+		return nil, errors.New("DBManager - Database Not Connected!")
+	}
+
+	if !database.TableExists(tableName) {
+		log.Println("Table doesn't exist!!!")
+		return nil, errors.New("DBManager - Table doesn't exist!")
+	}
+
+	finalMap := []Value{}
+	pageSize, _ := strconv.Atoi(fmt.Sprint(pageInfo["pageSize"]))
+	pageNumber, _ := strconv.Atoi(fmt.Sprint(pageInfo["pageNumber"]))
+
+	filters := "internal_page_id > " + fmt.Sprint(pageSize*pageNumber)
+
+	query := "SELECT * FROM " + tableName
+
+	query += " WHERE " + filters
+
+	query += " ORDER BY internal_page_id ASC"
+
+	query += " LIMIT " + fmt.Sprint(pageInfo["pageSize"])
+	log.Println(query)
+
+	result := make(map[string]interface{})
+	rows, err := database.db.Queryx(query)
+	if err != nil {
+		return nil, errors.New("DBManager - Couldn't execute query")
+	}
+	for rows.Next() {
+		err := rows.MapScan(result)
+		if err != nil {
+			return nil, errors.New("DBManager - Couldn't execute query")
+		}
+
+		temp := make(Value)
+		for k, v := range result {
+			if k == "internal_page_id" {
+				continue
+			}
 			temp[k] = fmt.Sprint(v)
 		}
 		finalMap = append(finalMap, temp)

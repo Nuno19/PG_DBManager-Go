@@ -2,7 +2,7 @@
 
 //It uses maps to create manage an save data in postgres database
 
-package dbmanager
+package main
 
 import (
 	"reflect"
@@ -87,6 +87,27 @@ func TestDBManager_Connect(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := tt.database.Connect(tt.args.dbName, tt.args.dbUser, tt.args.dbPassword); (err != nil) != tt.wantErr {
 				t.Errorf("DBManager.Connect() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestDBManager_ConnectURL(t *testing.T) {
+	type args struct {
+		url string
+	}
+	tests := []struct {
+		name     string
+		database *DBManager
+		args     args
+		wantErr  bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := tt.database.ConnectURL(tt.args.url); (err != nil) != tt.wantErr {
+				t.Errorf("DBManager.ConnectURL() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -322,6 +343,34 @@ func TestDBManager_UpdateRowBy(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := tt.database.UpdateRowBy(tt.args.tableName, tt.args.filter, tt.args.elem); (err != nil) != tt.wantErr {
 				t.Errorf("DBManager.UpdateRowBy() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestDBManager_PagedQuery(t *testing.T) {
+	type args struct {
+		tableName string
+		pageInfo  Value
+	}
+	tests := []struct {
+		name     string
+		database *DBManager
+		args     args
+		want     []Value
+		wantErr  bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.database.PagedQuery(tt.args.tableName, tt.args.pageInfo)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DBManager.PagedQuery() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("DBManager.PagedQuery() = %v, want %v", got, tt.want)
 			}
 		})
 	}
