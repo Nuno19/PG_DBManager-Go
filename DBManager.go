@@ -1,6 +1,6 @@
 //Package dbmanager Provides a postgres database manager using sqlx.
 //It uses maps to create manage an save data in postgres database
-package dbmanage
+package dbmanager
 
 import (
 	"errors"
